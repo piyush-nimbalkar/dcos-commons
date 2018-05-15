@@ -261,7 +261,7 @@
         ]
       },
       "lighthouse": {
-        "description": "Lighthouse exposes the web UI for Portworx. Start this if you don't want to connect to the central Portworx Lighthouse",
+        "description": "Lighthouse exposes the web UI for Portworx. Start this if you don't want to connect to the central Portworx Lighthouse. \nNote: Lighthouse will not work with Portworx version 1.4 and above. Please use the latest framework to install Lighthouse for Portworx 1.4 and above.",
         "type": "object",
         "properties": {
           "enabled": {
