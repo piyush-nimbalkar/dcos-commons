@@ -83,6 +83,18 @@ pods:
                     USR_SRC_MOUNT="-v /usr/src:/usr/src"
                 fi
 
+                {{#ETCD_ENABLED}}
+                {{#ETCD_PROXY_ENABLED}}
+                PORTWORX_KVDB=etcd://etcd-proxy-0-start.${FRAMEWORK_HOST}:{{ETCD_PROXY_ADVERTISE_PORT}}
+                {{/ETCD_PROXY_ENABLED}}
+                {{^ETCD_PROXY_ENABLED}}
+                PORTWORX_KVDB=etcd://etcd-cluster-0-node.${FRAMEWORK_HOST}:{{ETCD_NODE_ADVERTISE_PORT}},etcd://etcd-cluster-1-node.${FRAMEWORK_HOST}:{{ETCD_NODE_ADVERTISE_PORT}},etcd://etcd-cluster-2-node.${FRAMEWORK_HOST}:{{ETCD_NODE_ADVERTISE_PORT}}
+                {{/ETCD_PROXY_ENABLED}}
+                {{/ETCD_ENABLED}}
+                {{^ETCD_ENABLED}}
+                PORTWORX_KVDB={{PORTWORX_KVDB_SERVERS}}
+                {{/ETCD_ENABLED}}
+
                 echo "[Unit]
                     Description=Portworx Container
                     Before=docker.service
@@ -120,7 +132,7 @@ pods:
                           -t $PWX_TOKEN
                           {{/LIGHTHOUSE_ENABLED}}
                           {{^LIGHTHOUSE_ENABLED}}
-                          -k {{PORTWORX_KVDB}}
+                          -k $PORTWORX_KVDB
                           {{/LIGHTHOUSE_ENABLED}}
                     KillMode=control-group
                     ExecStop=/opt/pwx/bin/runc kill %n
@@ -280,9 +292,21 @@ pods:
         ports:
           http:
             port: {{LIGHTHOUSE_WEBUI_PORT}}
-        cmd: >
+        cmd: |
+            {{#ETCD_ENABLED}}
+            {{#ETCD_PROXY_ENABLED}}
+            PORTWORX_KVDB=etcd://etcd-proxy-0-start.${FRAMEWORK_HOST}:{{ETCD_PROXY_ADVERTISE_PORT}}
+            {{/ETCD_PROXY_ENABLED}}
+            {{^ETCD_PROXY_ENABLED}}
+            PORTWORX_KVDB=etcd://etcd-cluster-0-node.${FRAMEWORK_HOST}:{{ETCD_NODE_ADVERTISE_PORT}},etcd://etcd-cluster-1-node.${FRAMEWORK_HOST}:{{ETCD_NODE_ADVERTISE_PORT}},etcd://etcd-cluster-2-node.${FRAMEWORK_HOST}:{{ETCD_NODE_ADVERTISE_PORT}}
+            {{/ETCD_PROXY_ENABLED}}
+            {{/ETCD_ENABLED}}
+            {{^ETCD_ENABLED}}
+            PORTWORX_KVDB={{PORTWORX_KVDB_SERVERS}}
+            {{/ETCD_ENABLED}}
+
             LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu curl -X POST http://admin:password@influxdb-0-start.${FRAMEWORK_HOST}:{{INFLUXDB_LISTEN_PORT}}/query --data-urlencode "q=CREATE DATABASE px_stats" &&
-            /bin/bash /lighthouse/on-prem-entrypoint.sh -d http://admin:password@influxdb-0-start.${FRAMEWORK_HOST}:{{INFLUXDB_LISTEN_PORT}}/ -k {{PORTWORX_KVDB}}
+            /bin/bash /lighthouse/on-prem-entrypoint.sh -d http://admin:password@influxdb-0-start.${FRAMEWORK_HOST}:{{INFLUXDB_LISTEN_PORT}}/ -k $PORTWORX_KVDB
         env:
           PWX_LH_PORT: {{LIGHTHOUSE_WEBUI_PORT}}
           PWX_PX_PRECREATE_ADMIN: true
